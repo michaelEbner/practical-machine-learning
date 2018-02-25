@@ -20,23 +20,31 @@ train <- read.csv("train.csv",na.strings=c("NA","DIV/0!",""))
 test <- read.csv("test.csv",na.strings=c("NA","DIV/0!",""))
 
 
-train<- train[,colSums(is.na(train)) == 0] %>% select(-c(1:7))
-test <- test[,colSums(is.na(test)) == 0] %>% select(-c(1:7))
+train   <-train[,-c(1:7)]
+test <-test[,-c(1:7)]
+
+nzv_col <- nearZeroVar(train)
+train <- train[, -nzv_col]
+
+corrupted_col <- sapply(train, function(x) {sum(!(is.na(x) | x == ""))})
+null_col <- names(corrupted_col[corrupted_col < 0.6 * length(train$classe)])
+train <- train[, !names(train) %in% null_col]
 
 set.seed(24)
 
-sub <- createDataPartition(y=train$classe,p=0.75,list=F)
-sub_train <- train[sub,]
-sub_test <- train[-sub,]
+subs <- createDataPartition(y=train$classe, p=0.75, list=FALSE)
+subtrain <- train[subs, ] 
+subtest <- train[-subs, ]
 
-mod1 <- rpart(classe~.,data=sub_train,method="class")
-pred1 <- predict(mod1,data=sub_test,type="class")
-rpart.plot(mod1,main="Classification Tree", extra=102,under=T,faclen=0)
-confusionMatrix(pred1, sub_test$classe)
 
-mod2 <- randomForest(classe~.,data=sub_train,method="class")
-pred2 <- predict(mod2,data=sub_test,type="class")
-confusionMatrix(pred2,sub_test$classe)
+#Decision Tree
+mod1 <- rpart(classe ~ ., data=subtrain, method="class")
+pred1 <- predict(mod1, subtest, type = "class")
+rpart.plot(mod1, main="Classification Tree", extra=102, under=TRUE, faclen=0)
+confusionMatrix(pred1, subtest$classe)
 
-predictfinal <- predict(mod2, test, type="class")
-predictfinal
+#Random Forest
+mod2 <- train(classe ~ ., data=subtrain, method="rf")
+pred2 <- predict(mod2, subtest)
+confusionMatrix(pred2, subtest$classe)
+
