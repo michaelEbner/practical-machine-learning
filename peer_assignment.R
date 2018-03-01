@@ -4,7 +4,7 @@ library(rpart)
 library(rpart.plot)
 library(tidyverse)
 library(ggplot2)
-setwd("/Users/mickey/Documents/GitHub/practical-machine-learning")
+setwd("/Users/mebner/Documents/for_me/R_coursera/GitHub/practical-machine-learning")
 
 
 if (!file.exists("train.csv")){
@@ -16,13 +16,15 @@ if (!file.exists("test.csv")) {
   download.file(fileURL, "test.csv", method="curl")
 }
 
+# Replace all missing fields with NA 
 train <- read.csv("train.csv",na.strings=c("NA","DIV/0!",""))
 test <- read.csv("test.csv",na.strings=c("NA","DIV/0!",""))
 
-
+# Remove first 7 columns which can't be used for predicting
 train   <-train[,-c(1:7)]
 test <-test[,-c(1:7)]
 
+#Remove columns with more than 60% NAs
 nzv_col <- nearZeroVar(train)
 train <- train[, -nzv_col]
 

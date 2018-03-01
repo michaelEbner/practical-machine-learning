@@ -1,0 +1,132 @@
+---
+title: "Learning Stream 005 - Project"
+author: "Michael Ebner"
+date: "01/03/2018"
+output: html_document
+---
+
+# Objective
+
+The goal of your project is to predict the manner in which they did the exercise. This is the "classe" variable in the training set. You may use any of the other variables to predict with. You should create a report describing how you built your model, how you used cross validation, what you think the expected out of sample error is, and why you made the choices you did. You will also use your prediction model to predict 20 different test cases.
+
+# Analysis
+
+## Analysis steps
+
+. Load the data and required packages
+. Clean data
+. Partitioning the data
+. Train models
+. Model comparison
+. Submission
+. Appendix
+
+## Load the data and required packages
+
+In this step we get all the packages needed for this task.
+Furthermore we load the data in case it's not yeat stored in the working directory.
+
+```{r Load the data and required packages}
+library(caret)
+library(randomForest)
+library(rpart)
+library(rpart.plot)
+library(tidyverse)
+library(ggplot2)
+setwd("/Users/mebner/Documents/for_me/R_coursera/GitHub/practical-machine-learning")
+
+
+if (!file.exists("train.csv")){
+  fileURL <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+  download.file(fileURL, "train.csv", method="curl")
+}  
+if (!file.exists("test.csv")) { 
+  fileURL <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+  download.file(fileURL, "test.csv", method="curl")
+}
+```
+
+
+## Clean data
+
+First we unify corrupted values like NAs, empty cells or DIV/0!.
+
+Second we are removing unnecassary columns that
+. are mostly empty (< 60%)
+. contain non numerica data which can't be used for predicting
+
+
+
+```{r Clean data}
+# Replace all missing fields with NA 
+train <- read.csv("train.csv",na.strings=c("NA","DIV/0!",""))
+test <- read.csv("test.csv",na.strings=c("NA","DIV/0!",""))
+
+# Remove first 7 columns which can't be used for predicting
+train   <-train[,-c(1:7)]
+test <-test[,-c(1:7)]
+
+#Remove columns with more than 60% NAs
+nzv_col <- nearZeroVar(train)
+train <- train[, -nzv_col]
+
+corrupted_col <- sapply(train, function(x) {sum(!(is.na(x) | x == ""))})
+null_col <- names(corrupted_col[corrupted_col < 0.6 * length(train$classe)])
+train <- train[, !names(train) %in% null_col]
+```
+
+
+# Running the Models
+
+## Partition the data
+
+```{r Running the Models: Subsetting the data}
+subs <- createDataPartition(y=train$classe, p=0.75, list=FALSE)
+subtrain <- train[subs, ] 
+subtest <- train[-subs, ]
+```
+
+
+## 1st Approach: Decision Tree
+```{r Running the Models: 1st Approach: Decision Tree}
+#Decision Tree
+mod1 <- rpart(classe ~ ., data=subtrain, method="class")
+pred1 <- predict(mod1, subtest, type = "class")
+confusionMatrix(pred1, subtest$classe)
+```
+
+
+## 2nd Approach: Random Forrest
+```{r Running the Models: 2nd Approach: Random Forrest}
+
+#Random Forest
+mod2 <- randomForest(classe ~. , data=subtrain, method="class")
+pred2 <- predict(mod2, subtest)
+confusionMatrix(pred2, subtest$classe)
+```
+
+
+# Comparison
+
+It's save to say that the random forrest method is performing better. It's much more accurate: 99.59% compared to 71.88%.
+The out of sample error is < 0.005 (1 - accuracy for predictions made against the cross validation subset = 1 - 0.9959 = < 0.005).
+
+## Submission
+
+Finally we can use the selected model (RF) to predict the outcomes of the original test data set.
+
+```{r Submission}
+# predict the outcome of the original testing data set
+predict_final <- predict(mod2, test, type="class")
+predict_final
+```
+
+# Appendix
+
+## Decision Tree visualisation
+
+```{r Appendix: Decision Tree visualisation}
+rpart.plot(mod1, main="Classification Tree", extra=102, under=TRUE, faclen=0)
+```
+
+
