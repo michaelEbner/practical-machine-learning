@@ -2,7 +2,7 @@
 title: "Learning Stream 005 - Project"
 author: "Michael Ebner"
 date: "01/03/2018"
-output: html_document
+output: md_document
 ---
 
 # Objective
