@@ -15,8 +15,9 @@ Analysis
 Analysis steps
 --------------
 
-. Load the data and required packages . Clean data . Partitioning the
-data . Train models . Model comparison . Submission . Appendix
+. Load the data and required packages . Clean data . Correlation Matrix
+. Partitioning the data . Train models . Model comparison . Submission .
+Appendix
 
 Load the data and required packages
 -----------------------------------
@@ -75,6 +76,12 @@ we load the data in case it's not yeat stored in the working directory.
     ## margin():  ggplot2, randomForest
 
     library(ggplot2)
+    library(corrplot)
+
+    ## Warning: package 'corrplot' was built under R version 3.4.2
+
+    ## corrplot 0.84 loaded
+
     setwd("/Users/mebner/Documents/for_me/R_coursera/GitHub/practical-machine-learning")
 
 
@@ -111,8 +118,36 @@ Second we are removing unnecassary columns that . are mostly empty (&lt;
     null_col <- names(corrupted_col[corrupted_col < 0.6 * length(train$classe)])
     train <- train[, !names(train) %in% null_col]
 
+Correlations
+============
+
+First we want to look at the correlations in order to gain some
+information that might be helpful when it comes to pick one ore multiple
+algorythms for our model.
+
+    corrplot(cor(train[-53]),tl.col="black",title= "Correlation plot of the variables used", order = "hclust",tl.cex = 0.5,tl.pos="l")
+
+![](peer_project_mebner_files/figure-markdown_strict/Correlation-1.png)
+
+We see some strong correlations which helps us when picking the models.
+
 Running the Models
 ==================
+
+Picking the algorythms
+----------------------
+
+So are using multiple numeric predictors to predict a non numeric
+variable that leaves us with a bunch of potential algorythms to work
+with to name some of them:
+
+. Kernel SVM . Random Forest . Neural Network . Gradient Boosting Tree .
+Decision Tree . Logistic Regression . Naive Bayes . Linear SVM
+
+We'll pick two out of them one that is fast and anotherone that might
+give us a higher level of Accuracy
+
+. Speed -&gt; Decision Tree . Accuracy -&gt; Random Forest
 
 Partition the data
 ------------------
@@ -124,6 +159,11 @@ Partition the data
 1st Approach: Decision Tree
 ---------------------------
 
+It is a type of supervised learning algorithm that is mostly used for
+classification problems. It works for both categorical and continuous
+dependent variables. The it makes it easy to explain the steps of the
+prediction, however it's not known to be very accurate.
+
     #Decision Tree
     mod1 <- rpart(classe ~ ., data=subtrain, method="class")
     pred1 <- predict(mod1, subtest, type = "class")
@@ -133,36 +173,43 @@ Partition the data
     ## 
     ##           Reference
     ## Prediction    A    B    C    D    E
-    ##          A 1287  193   14   78   55
-    ##          B   54  580  110   43  100
-    ##          C   24   71  654  129   72
-    ##          D   13   79   54  517   99
-    ##          E   17   26   23   37  575
+    ##          A 1256  132    9   48   10
+    ##          B   47  614   78   66   84
+    ##          C   33   91  700  134   96
+    ##          D   21   67   49  509   59
+    ##          E   38   45   19   47  652
     ## 
     ## Overall Statistics
-    ##                                          
-    ##                Accuracy : 0.7367         
-    ##                  95% CI : (0.7242, 0.749)
-    ##     No Information Rate : 0.2845         
-    ##     P-Value [Acc > NIR] : < 2.2e-16      
-    ##                                          
-    ##                   Kappa : 0.6651         
-    ##  Mcnemar's Test P-Value : < 2.2e-16      
+    ##                                           
+    ##                Accuracy : 0.7608          
+    ##                  95% CI : (0.7486, 0.7727)
+    ##     No Information Rate : 0.2845          
+    ##     P-Value [Acc > NIR] : < 2.2e-16       
+    ##                                           
+    ##                   Kappa : 0.697           
+    ##  Mcnemar's Test P-Value : < 2.2e-16       
     ## 
     ## Statistics by Class:
     ## 
     ##                      Class: A Class: B Class: C Class: D Class: E
-    ## Sensitivity            0.9226   0.6112   0.7649   0.6430   0.6382
-    ## Specificity            0.9031   0.9224   0.9269   0.9402   0.9743
-    ## Pos Pred Value         0.7910   0.6539   0.6884   0.6785   0.8481
-    ## Neg Pred Value         0.9670   0.9081   0.9492   0.9307   0.9229
+    ## Sensitivity            0.9004   0.6470   0.8187   0.6331   0.7236
+    ## Specificity            0.9433   0.9305   0.9126   0.9522   0.9628
+    ## Pos Pred Value         0.8632   0.6907   0.6641   0.7220   0.8140
+    ## Neg Pred Value         0.9597   0.9166   0.9597   0.9297   0.9393
     ## Prevalence             0.2845   0.1935   0.1743   0.1639   0.1837
-    ## Detection Rate         0.2624   0.1183   0.1334   0.1054   0.1173
-    ## Detection Prevalence   0.3318   0.1809   0.1937   0.1554   0.1383
-    ## Balanced Accuracy      0.9128   0.7668   0.8459   0.7916   0.8062
+    ## Detection Rate         0.2561   0.1252   0.1427   0.1038   0.1330
+    ## Detection Prevalence   0.2967   0.1813   0.2149   0.1438   0.1633
+    ## Balanced Accuracy      0.9218   0.7887   0.8656   0.7926   0.8432
 
 2nd Approach: Random Forrest
 ----------------------------
+
+RF can handle correlated variables pretty well, that's why comes in
+handy here. It develops losts of decsion trees based on random selection
+of data and random selection of variables.
+
+This sounds as it requires some calculation effort and that's exactly
+the trade off: Accuracy VS Speed.
 
     #Random Forest
     mod2 <- randomForest(classe ~. , data=subtrain, method="class")
@@ -173,33 +220,33 @@ Partition the data
     ## 
     ##           Reference
     ## Prediction    A    B    C    D    E
-    ##          A 1394    3    0    0    0
-    ##          B    1  944    3    0    0
-    ##          C    0    2  851    4    0
-    ##          D    0    0    1  798    2
-    ##          E    0    0    0    2  899
+    ##          A 1394    9    0    0    0
+    ##          B    1  939    5    0    0
+    ##          C    0    1  850   11    0
+    ##          D    0    0    0  793    2
+    ##          E    0    0    0    0  899
     ## 
     ## Overall Statistics
-    ##                                           
-    ##                Accuracy : 0.9963          
-    ##                  95% CI : (0.9942, 0.9978)
-    ##     No Information Rate : 0.2845          
-    ##     P-Value [Acc > NIR] : < 2.2e-16       
-    ##                                           
-    ##                   Kappa : 0.9954          
-    ##  Mcnemar's Test P-Value : NA              
+    ##                                          
+    ##                Accuracy : 0.9941         
+    ##                  95% CI : (0.9915, 0.996)
+    ##     No Information Rate : 0.2845         
+    ##     P-Value [Acc > NIR] : < 2.2e-16      
+    ##                                          
+    ##                   Kappa : 0.9925         
+    ##  Mcnemar's Test P-Value : NA             
     ## 
     ## Statistics by Class:
     ## 
     ##                      Class: A Class: B Class: C Class: D Class: E
-    ## Sensitivity            0.9993   0.9947   0.9953   0.9925   0.9978
-    ## Specificity            0.9991   0.9990   0.9985   0.9993   0.9995
-    ## Pos Pred Value         0.9979   0.9958   0.9930   0.9963   0.9978
-    ## Neg Pred Value         0.9997   0.9987   0.9990   0.9985   0.9995
+    ## Sensitivity            0.9993   0.9895   0.9942   0.9863   0.9978
+    ## Specificity            0.9974   0.9985   0.9970   0.9995   1.0000
+    ## Pos Pred Value         0.9936   0.9937   0.9861   0.9975   1.0000
+    ## Neg Pred Value         0.9997   0.9975   0.9988   0.9973   0.9995
     ## Prevalence             0.2845   0.1935   0.1743   0.1639   0.1837
-    ## Detection Rate         0.2843   0.1925   0.1735   0.1627   0.1833
-    ## Detection Prevalence   0.2849   0.1933   0.1748   0.1633   0.1837
-    ## Balanced Accuracy      0.9992   0.9969   0.9969   0.9959   0.9986
+    ## Detection Rate         0.2843   0.1915   0.1733   0.1617   0.1833
+    ## Detection Prevalence   0.2861   0.1927   0.1758   0.1621   0.1833
+    ## Balanced Accuracy      0.9984   0.9940   0.9956   0.9929   0.9989
 
 Comparison
 ==========

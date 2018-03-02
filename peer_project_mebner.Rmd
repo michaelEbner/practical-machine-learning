@@ -15,6 +15,7 @@ The goal of your project is to predict the manner in which they did the exercise
 
 . Load the data and required packages
 . Clean data
+. Correlation Matrix
 . Partitioning the data
 . Train models
 . Model comparison
@@ -33,6 +34,7 @@ library(rpart)
 library(rpart.plot)
 library(tidyverse)
 library(ggplot2)
+library(corrplot)
 setwd("/Users/mebner/Documents/for_me/R_coursera/GitHub/practical-machine-learning")
 
 
@@ -75,8 +77,36 @@ null_col <- names(corrupted_col[corrupted_col < 0.6 * length(train$classe)])
 train <- train[, !names(train) %in% null_col]
 ```
 
+# Correlations
+
+First we want to look at the correlations in order to gain some information that might be helpful when it comes to pick one ore multiple algorythms for our model.
+
+```{r Correlation}
+corrplot(cor(train[-53]),tl.col="black",title= "Correlation plot of the variables used", order = "hclust",tl.cex = 0.5,tl.pos="l")
+```
+
+We see some strong correlations which helps us when picking the models.
 
 # Running the Models
+
+## Picking the algorythms
+
+So are using multiple numeric predictors to predict a non numeric variable that leaves us with a bunch of potential algorythms to work with to name some of them:
+
+. Kernel SVM
+. Random Forest
+. Neural Network
+. Gradient Boosting Tree
+. Decision Tree
+. Logistic Regression
+. Naive Bayes
+. Linear SVM
+
+We'll pick two out of them one that is fast and anotherone that might give us a higher level of Accuracy
+
+. Speed -> Decision Tree
+. Accuracy -> Random Forest
+
 
 ## Partition the data
 
@@ -88,6 +118,9 @@ subtest <- train[-subs, ]
 
 
 ## 1st Approach: Decision Tree
+
+It is a type of supervised learning algorithm that is mostly used for classification problems. It works for both categorical and continuous dependent variables. The it makes it easy to explain the steps of the prediction, however it's not known to be very accurate.
+
 ```{r Running the Models: 1st Approach: Decision Tree}
 #Decision Tree
 mod1 <- rpart(classe ~ ., data=subtrain, method="class")
@@ -97,6 +130,11 @@ confusionMatrix(pred1, subtest$classe)
 
 
 ## 2nd Approach: Random Forrest
+
+RF can handle correlated variables pretty well, that's why comes in handy here. It develops losts of decsion trees based on random selection of data and random selection of variables.
+
+This sounds as it requires some calculation effort and that's exactly the trade off: Accuracy VS Speed.
+
 ```{r Running the Models: 2nd Approach: Random Forrest}
 
 #Random Forest
